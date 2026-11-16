@@ -89,6 +89,7 @@ on:
           - "m5stack-stackchan"
           - "m5stack-sticks3"
           - "m5stack-tab5"
+          - "TDONGLE-S3"
           - "Mako"
           - "Marauder-Mini"
           - "Marauder-V4-V6"
