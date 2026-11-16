@@ -26,6 +26,36 @@
 void _setup_gpio() {
     bruceConfigPins.rotation = 1; // adjust after first boot if the screen reads sideways/upside down
 
+    // This board has no physically wired I2C/SPI/IR/RF headers. Bruce's core
+    // still calls pinMode() on every bus field at boot regardless, so every
+    // field below must point at a real, unused GPIO instead of staying at
+    // its default GPIO_NUM_NC (-1) — leaving them unset caused a
+    // "pinMode(): Invalid IO 255" crash. These pins do nothing electrically;
+    // they only exist to keep the core's generic init from touching -1.
+    bruceConfigPins.i2c_bus = {(gpio_num_t)8, (gpio_num_t)9};   // sda, scl
+    bruceConfigPins.outer_bus = {
+        (gpio_num_t)6, (gpio_num_t)7, (gpio_num_t)11, (gpio_num_t)10
+    }; // sck,miso,mosi,cs
+    bruceConfigPins.PN532_bus = {
+        (gpio_num_t)6, (gpio_num_t)7, (gpio_num_t)11, (gpio_num_t)10
+    }; // sck,miso,mosi,cs
+    bruceConfigPins.SDCARD_bus = {
+        (gpio_num_t)6, (gpio_num_t)7, (gpio_num_t)11, (gpio_num_t)10
+    }; // sck,miso,mosi,cs — placeholder; real SD uses the SDMMC peripheral (stage 2)
+    bruceConfigPins.CC1101_bus = {
+        (gpio_num_t)6, (gpio_num_t)7, (gpio_num_t)11, (gpio_num_t)10, (gpio_num_t)13, GPIO_NUM_NC
+    }; // sck,miso,mosi,cs,gdo0,gdo2
+    bruceConfigPins.NRF24_bus = {
+        (gpio_num_t)6, (gpio_num_t)7, (gpio_num_t)11, (gpio_num_t)10, (gpio_num_t)13
+    }; // sck,miso,mosi,cs(ss),ce
+    bruceConfigPins.badusb_bus = {(gpio_num_t)44, (gpio_num_t)43}; // rx, tx
+    bruceConfigPins.uart_bus = {(gpio_num_t)44, (gpio_num_t)43};   // rx, tx
+    bruceConfigPins.gps_bus = {(gpio_num_t)44, (gpio_num_t)43};    // rx, tx
+    bruceConfigPins.irTx = 9;
+    bruceConfigPins.irRx = 8;
+    bruceConfigPins.rfTx = 8;
+    bruceConfigPins.rfRx = 9;
+
     // TODO (stage 2): SD_MMC.begin() with CLK=12 CMD=16 D0=14 D1=17 D2=21 D3=18
     // TODO (stage 2): APA102 RGB LED driver, CLK=39 DIN=40 (e.g. FastLED <APA102>)
 
