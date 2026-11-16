@@ -351,7 +351,7 @@ void boot_screen_anim() {
                 bruceConfig.priColor
             );
         if (!boot_img && (millis() - i > 3400) && (millis() - i) < 3600) tft.fillScreen(bruceConfig.bgColor);
-        if (!boot_img && (millis() - i > 3600))
+              if (!boot_img && (millis() - i > 3600) && tftWidth >= bits_width && tftHeight >= bits_height)
             tft.drawXBitmap(
                 (tftWidth - 238) / 2,
                 (tftHeight - 133) / 2,
