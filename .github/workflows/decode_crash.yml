@@ -1,0 +1,69 @@
+name: Decode Crash Backtrace
+on:
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: 'Branch to build from'
+        required: true
+        default: 'main'
+        type: string
+      environment:
+        description: 'Environment that was flashed when it crashed'
+        required: true
+        default: 'TDONGLE-S3'
+        type: string
+      addresses:
+        description: 'Backtrace addresses, space-separated (PC:SP pairs OK, only the PC part before the colon is used)'
+        required: true
+        type: string
+
+jobs:
+  decode:
+    name: Decode backtrace for ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-latest
+    env:
+      SELECTED_ENV: ${{ github.event.inputs.environment }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.target_branch }}
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          pip install requests esptool intelhex
+          pip install platformio
+
+      - name: Build (to produce the matching .elf with debug info)
+        run: |
+          echo "Building environment: ${{ env.SELECTED_ENV }}"
+          platformio run -e "${{ env.SELECTED_ENV }}"
+
+      - name: Locate toolchain addr2line
+        id: find_tool
+        run: |
+          ADDR2LINE=$(find ~/.platformio/packages/toolchain-xtensa-esp-elf -name "xtensa-esp32s3-elf-addr2line" | head -n1)
+          if [ -z "$ADDR2LINE" ]; then
+            ADDR2LINE=$(find ~/.platformio/packages -name "xtensa-esp32s3-elf-addr2line" | head -n1)
+          fi
+          echo "Using addr2line at: $ADDR2LINE"
+          echo "ADDR2LINE=$ADDR2LINE" >> $GITHUB_ENV
+
+      - name: Decode addresses
+        run: |
+          ELF=$(find .pio/build/${{ env.SELECTED_ENV }} -name "firmware.elf" | head -n1)
+          echo "Using ELF: $ELF"
+          echo ""
+          echo "===== DECODED BACKTRACE ====="
+          for pair in ${{ github.event.inputs.addresses }}; do
+            addr=$(echo "$pair" | cut -d: -f1)
+            echo "---- $addr ----"
+            "$ADDR2LINE" -pfiaC -e "$ELF" "$addr" || echo "(could not decode $addr)"
+          done
+          echo "=============================="
